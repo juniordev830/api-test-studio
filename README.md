@@ -10,7 +10,10 @@ Ferramenta CLI Node.js 22 para verificar status de endpoints REST, sem dependên
 
 ```bash
 node src/cli.js http://127.0.0.1:3000/health 200
+node src/cli.js http://127.0.0.1:3000/health 200 --method HEAD --timeout 2000
 ```
+
+O método padrão é `GET`. Use `--method HEAD` para conferir o status sem pedir o corpo da resposta. O parâmetro `--timeout` define o tempo máximo em milissegundos, de 1 a 120000.
 
 ## Testes
 
