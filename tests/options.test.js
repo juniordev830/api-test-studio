@@ -68,7 +68,7 @@ test('rejects invalid header expectations before any network request', async () 
     /Invalid expected header/,
   );
   await assert.rejects(
-    checkEndpoint('http://localhost', 200, request, { expectedHeaders: ['x:value\\r\\nattack'] }),
+    checkEndpoint('http://localhost', 200, request, { expectedHeaders: ['x:value' + String.fromCharCode(13, 10) + 'attack'] }),
     /Invalid expected header/,
   );
   await assert.rejects(
