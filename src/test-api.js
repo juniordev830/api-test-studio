@@ -9,6 +9,14 @@ export async function checkEndpoint(input, expectedStatus = 200, request = fetch
   if (!['GET', 'HEAD'].includes(method)) throw new RangeError('Only GET and HEAD are supported');
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 120000)
     throw new RangeError('Timeout must be between 1 and 120000 ms');
+  const startedAt = performance.now();
   const response = await request(url, { method, redirect: 'manual', signal: AbortSignal.timeout(timeoutMs) });
-  return { url: url.toString(), expectedStatus, actualStatus: response.status, passed: response.status === expectedStatus };
+  const durationMs = Math.round((performance.now() - startedAt) * 100) / 100;
+  return {
+    url: url.toString(),
+    expectedStatus,
+    actualStatus: response.status,
+    passed: response.status === expectedStatus,
+    durationMs,
+  };
 }

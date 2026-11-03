@@ -8,7 +8,9 @@ test('compares the response status with the expected status', async () => {
   try {
     await new Promise(resolve => server.once('listening', resolve));
     const url = `http://127.0.0.1:${server.address().port}`;
-    assert.equal((await checkEndpoint(url, 204)).passed, true);
+    const passed = await checkEndpoint(url, 204);
+    assert.equal(passed.passed, true);
+    assert.equal(typeof passed.durationMs, 'number');
     assert.equal((await checkEndpoint(url, 200)).passed, false);
   } finally { await new Promise(resolve => server.close(resolve)); }
 });
