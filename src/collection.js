@@ -39,7 +39,7 @@ export function validateTarget(target) {
 }
 
 export function validateHeaders(input = {}) {
-  objectKeys(input, [], 'headers');
+  if (!isRecord(input)) throw new TypeError('headers must be an object');
   const entries = Object.entries(input);
   if (entries.length > 20) throw new RangeError('Too many request headers');
   const headers = {};
