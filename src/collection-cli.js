@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { open, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -50,15 +50,31 @@ export function parseOptions(argv) {
 }
 
 export async function loadCollection(file) {
-  const content = await readFile(file, 'utf8');
-  if (Buffer.byteLength(content, 'utf8') > 128 * 1024) {
-    throw new RangeError('Collection file exceeds 128 KiB');
+  const limit = 128 * 1024;
+  const handle = await open(file, 'r');
+  let raw;
+  try {
+    const info = await handle.stat();
+    if (!info.isFile()) throw new TypeError('Collection path must be a regular file');
+    if (info.size > limit) throw new RangeError('Collection file exceeds 128 KiB');
+    // Read at most limit + 1 bytes even if the file grows after stat().
+    const buffer = Buffer.alloc(limit + 1);
+    let length = 0;
+    while (length < buffer.length) {
+      const { bytesRead } = await handle.read(buffer, length, buffer.length - length, null);
+      if (bytesRead === 0) break;
+      length += bytesRead;
+    }
+    if (length > limit) throw new RangeError('Collection file exceeds 128 KiB');
+    raw = buffer.subarray(0, length);
+  } finally {
+    await handle.close();
   }
   let parsed;
   try {
-    parsed = JSON.parse(content);
+    parsed = JSON.parse(new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(raw));
   } catch {
-    throw new TypeError('Collection file must contain valid JSON');
+    throw new TypeError('Collection file must contain valid JSON encoded as UTF-8');
   }
   validateCollection(parsed);
   return parsed;

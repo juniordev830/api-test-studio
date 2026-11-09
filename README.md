@@ -87,7 +87,9 @@ corpo de resposta ou valores de cabeçalhos potencialmente sensíveis.
   Duplicatas no mesmo objeto são rejeitadas; o limite de 20 cabeçalhos vale
   também após combinar os padrões e o cenário.
 - Até 1 MiB de corpo por resposta, interrompendo leitura ao atingir o limite.
-- Arquivo JSON de entrada até 128 KiB, com campos desconhecidos rejeitados.
+- Arquivo JSON regular em UTF-8 até 128 KiB, com campos desconhecidos rejeitados.
+  A leitura é limitada antes de interpretar o JSON, inclusive se o arquivo
+  crescer durante a operação. UTF-8 inválido é rejeitado sem substituir caracteres.
 - O runner **não isola destinos de rede**: não execute coleções não confiáveis,
   nem aponte para serviços sem autorização; URLs de rede interna são permitidas
   intencionalmente para testes locais.

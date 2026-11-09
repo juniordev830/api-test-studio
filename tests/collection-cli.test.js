@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, rm, truncate } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseOptions, loadCollection, runCli, HELP } from '../src/collection-cli.js';
@@ -69,6 +69,45 @@ test('loads a JSON collection and rejects malformed JSON', async () => {
     await assert.rejects(loadCollection(invalid), /1 to 100/);
     await writeFile(invalid, ' '.repeat(128 * 1024 + 1));
     await assert.rejects(loadCollection(invalid), /128 KiB/);
+  });
+});
+
+test('accepts exactly 128 KiB and rejects one byte above the limit', async () => {
+  await withFixture(async ({ file }) => {
+    const original = await readFile(file);
+    const padded = Buffer.concat([original, Buffer.alloc(128 * 1024 - original.length, 32)]);
+    await writeFile(file, padded);
+    assert.equal((await loadCollection(file)).cases.length, 2);
+    await writeFile(file, Buffer.concat([padded, Buffer.from(' ')]));
+    await assert.rejects(loadCollection(file), /128 KiB/);
+  });
+});
+
+test('rejects large sparse files and directories before reading JSON', async () => {
+  await withFixture(async ({ dir, file }) => {
+    await truncate(file, 100 * 1024 * 1024);
+    await assert.rejects(loadCollection(file), /128 KiB/);
+    await assert.rejects(loadCollection(dir), /regular file|EISDIR/);
+  });
+});
+
+test('rejects malformed UTF-8 instead of silently changing collection names', async () => {
+  await withFixture(async ({ file }) => {
+    const original = await readFile(file);
+    const offset = original.indexOf(Buffer.from('CLI integration'));
+    original[offset] = 0xff;
+    await writeFile(file, original);
+    await assert.rejects(loadCollection(file), /UTF-8/);
+  });
+});
+
+test('preserves Unicode collection and case names', async () => {
+  await withFixture(async ({ file }) => {
+    const original = JSON.parse(await readFile(file, 'utf8'));
+    original.name = 'Verificação de saúde ☕';
+    original.cases[0].id = 'serviço-principal';
+    await writeFile(file, JSON.stringify(original));
+    assert.deepEqual(await loadCollection(file), original);
   });
 });
 
