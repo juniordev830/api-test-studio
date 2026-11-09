@@ -275,3 +275,56 @@ test('reports mixed outcomes and validates concurrency bounds', async () => {
   }
   await assert.rejects(runCollection(collection(cases), { onResult: 'not a function' }), TypeError);
 });
+
+test('duration assertions include time spent downloading the response body', async t => {
+  let clock = 0;
+  t.mock.method(performance, 'now', () => clock);
+  const item = validateCollection(collection([one({
+    assertions: [{ kind: 'duration', maxMs: 50 }],
+  })])).cases[0];
+  const result = await executeCase(item, {
+    fetchImpl: async () => {
+      clock += 10;
+      return { status: 200, headers: new Headers(), body: {}, text: async () => {
+        clock += 100;
+        return 'downloaded';
+      } };
+    },
+  });
+  assert.equal(result.passed, false);
+  assert.equal(result.attempts[0].durationMs, 110);
+  assert.equal(result.durationMs, 110);
+});
+
+test('case duration includes retry waits but attempt durations do not', async t => {
+  let clock = 0;
+  t.mock.method(performance, 'now', () => clock);
+  const item = validateCollection(collection([one({ retries: 1, retryDelayMs: 50 })])).cases[0];
+  let requests = 0;
+  const result = await executeCase(item, {
+    fetchImpl: async () => {
+      clock += 10;
+      return fakeResponse(++requests === 1 ? 503 : 200);
+    },
+    sleep: async ms => { clock += ms; },
+  });
+  assert.equal(result.passed, true);
+  assert.deepEqual(result.attempts.map(attempt => attempt.durationMs), [10, 10]);
+  assert.equal(result.durationMs, 70);
+});
+
+test('HEAD duration measures headers without downloading a body', async t => {
+  let clock = 0;
+  t.mock.method(performance, 'now', () => clock);
+  const item = validateCollection(collection([one({ method: 'HEAD' })])).cases[0];
+  const result = await executeCase(item, {
+    fetchImpl: async () => {
+      clock += 25;
+      return { status: 200, headers: new Headers(), get body() {
+        throw new Error('HEAD must not read body');
+      } };
+    },
+  });
+  assert.equal(result.passed, true);
+  assert.equal(result.durationMs, 25);
+});

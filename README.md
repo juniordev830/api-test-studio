@@ -75,6 +75,9 @@ Matchers suportados:
 
 JSON pointers seguem RFC 6901, incluindo escapes `~0` e `~1`.
 Cada cenário compara também o status esperado, mesmo sem assertions explícitas.
+O matcher `duration` mede cada tentativa até terminar a leitura do corpo
+(em HEAD, apenas até receber os cabeçalhos). A duração total do cenário inclui
+as esperas entre tentativas; essas esperas não entram na duração de cada tentativa.
 Os relatórios contêm status, duração, tentativas e falhas, mas não armazenam o
 corpo de resposta ou valores de cabeçalhos potencialmente sensíveis.
 

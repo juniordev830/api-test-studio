@@ -146,6 +146,7 @@ export async function executeCase(testCase, options = {}) {
   const request = options.fetchImpl ?? fetch;
   const wait = options.sleep ?? (ms => new Promise(resolve => setTimeout(resolve, ms)));
   const attempts = [];
+  const caseStartedAt = performance.now();
   for (let attempt = 0; attempt <= testCase.retries; attempt++) {
     const startedAt = performance.now();
     try {
@@ -155,8 +156,8 @@ export async function executeCase(testCase, options = {}) {
         redirect: 'manual',
         signal: AbortSignal.timeout(testCase.timeoutMs),
       });
-      const durationMs = Math.round((performance.now() - startedAt) * 100) / 100;
       const body = testCase.method === 'HEAD' ? { text: '', sizeBytes: 0 } : await readBody(response);
+      const durationMs = Math.round((performance.now() - startedAt) * 100) / 100;
       const checks = evaluateAssertions([
         { kind: 'status', equals: testCase.expectedStatus },
         ...testCase.assertions,
@@ -187,7 +188,7 @@ export async function executeCase(testCase, options = {}) {
   return {
     id: testCase.id, url: testCase.url, method: testCase.method,
     passed: last.passed, status: last.status ?? null,
-    durationMs: Math.round(attempts.reduce((sum, item) => sum + item.durationMs, 0) * 100) / 100,
+    durationMs: Math.round((performance.now() - caseStartedAt) * 100) / 100,
     attempts,
   };
 }
