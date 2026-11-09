@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { mkdtemp, readFile, writeFile, rm, truncate } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, rm, truncate, link, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseOptions, loadCollection, runCli, HELP } from '../src/collection-cli.js';
@@ -136,6 +136,44 @@ test('writes a JUnit report to disk instead of stdout', async () => {
     assert.equal(stdout.text, '');
     assert.match(stderr.text, /Report written/);
     assert.match(await readFile(target, 'utf8'), /testsuite/);
+  });
+});
+
+test('refuses to overwrite an existing report', async () => {
+  await withFixture(async ({ dir, file }) => {
+    const target = join(dir, 'existing.json');
+    await writeFile(target, 'previous report');
+    const stderr = output();
+    const exit = await runCli(['--file', file, '--output', target], { stdout: output(), stderr });
+    assert.equal(exit, 2);
+    assert.equal(await readFile(target, 'utf8'), 'previous report');
+    assert.match(stderr.text, /already exists/);
+  });
+});
+
+for (const [kind, makeLink] of [['hard link', link], ['symbolic link', symlink]]) {
+  test('protects collection input when output is a ' + kind, async () => {
+    await withFixture(async ({ dir, file }) => {
+      const original = await readFile(file);
+      const target = join(dir, 'alias.json');
+      await makeLink(file, target);
+      const exit = await runCli(['--file', file, '--output', target], {
+        stdout: output(), stderr: output(),
+      });
+      assert.equal(exit, 2);
+      assert.deepEqual(await readFile(file), original);
+    });
+  });
+}
+
+test('concurrent exports never replace each other', async () => {
+  await withFixture(async ({ dir, file }) => {
+    const target = join(dir, 'shared.json');
+    const results = await Promise.all([1, 2].map(() => runCli([
+      '--file', file, '--output', target,
+    ], { stdout: output(), stderr: output() })));
+    assert.deepEqual(results.sort(), [0, 2]);
+    assert.equal(JSON.parse(await readFile(target, 'utf8')).total, 2);
   });
 });
 

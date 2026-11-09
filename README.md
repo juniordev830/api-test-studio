@@ -53,6 +53,9 @@ npm test
 O exemplo assume endpoints locais em 127.0.0.1:3000; ajuste para sua aplicação.
 O runner não inicia servidores nem faz chamadas remotas durante os testes automatizados.
 Saída: código 0 para sucesso, 1 para falhas de assertions e 2 para entrada inválida.
+`--output` cria um arquivo novo e nunca substitui arquivos existentes. Se o
+destino já existir (inclusive links para a entrada), a CLI retorna 2 e pede outro
+caminho. Use nomes diferentes para conservar o histórico de execuções.
 
 ### Estrutura da coleção
 

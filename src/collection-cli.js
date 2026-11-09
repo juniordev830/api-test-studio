@@ -12,7 +12,7 @@ export const HELP = [
   'Options:',
   '  --file PATH          JSON collection (required)',
   '  --format FORMAT      json | markdown | junit (default json)',
-  '  --output PATH        Write report to a file instead of stdout',
+  '  --output PATH        Create a new report file (never overwrite)',
   '  --concurrency N      Concurrent cases, 1 to 8 (default 2)',
   '  --help               Show this help',
   '',
@@ -93,7 +93,15 @@ export async function runCli(argv, io = {}) {
     const result = await runCollection(collection, { concurrency: options.concurrency });
     const report = formatReport(result, options.format);
     if (options.output) {
-      await writeFile(options.output, report, { encoding: 'utf8', flag: 'w' });
+      try {
+        // Exclusive creation also rejects aliases to input and concurrent writers.
+        await writeFile(options.output, report, { encoding: 'utf8', flag: 'wx' });
+      } catch (error) {
+        if (error.code === 'EEXIST') {
+          throw new Error('Output already exists; choose a new report path');
+        }
+        throw error;
+      }
       stderr.write('Report written to ' + options.output + '\n');
     } else {
       stdout.write(report);
