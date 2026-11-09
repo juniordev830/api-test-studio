@@ -82,6 +82,10 @@ corpo de resposta ou valores de cabeçalhos potencialmente sensíveis.
 
 - Somente GET/HEAD e HTTP(S), sem seguir redirecionamentos.
 - URL sem credenciais embutidas ou fragmentos; cabeçalhos de transporte restritos.
+- Nomes de cabeçalhos são normalizados para minúsculas: o valor do cenário
+  substitui o padrão mesmo com capitalização diferente (`Accept`/`accept`).
+  Duplicatas no mesmo objeto são rejeitadas; o limite de 20 cabeçalhos vale
+  também após combinar os padrões e o cenário.
 - Até 1 MiB de corpo por resposta, interrompendo leitura ao atingir o limite.
 - Arquivo JSON de entrada até 128 KiB, com campos desconhecidos rejeitados.
 - O runner **não isola destinos de rede**: não execute coleções não confiáveis,

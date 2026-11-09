@@ -42,7 +42,7 @@ export function validateHeaders(input = {}) {
   if (!isRecord(input)) throw new TypeError('headers must be an object');
   const entries = Object.entries(input);
   if (entries.length > 20) throw new RangeError('Too many request headers');
-  const headers = {};
+  const headers = new Map();
   for (const [name, value] of entries) {
     if (!HEADER_NAME.test(name) || BLOCKED_HEADERS.has(name.toLowerCase())) {
       throw new TypeError('Invalid or restricted request header');
@@ -50,9 +50,11 @@ export function validateHeaders(input = {}) {
     if (typeof value !== 'string' || value.length > 4096 || /[\r\n\0]/.test(value)) {
       throw new TypeError('Invalid request header value');
     }
-    headers[name] = value;
+    const normalizedName = name.toLowerCase();
+    if (headers.has(normalizedName)) throw new TypeError('Duplicate request header name');
+    headers.set(normalizedName, value);
   }
-  return headers;
+  return Object.fromEntries(headers);
 }
 
 function validateSettings(input, name) {
@@ -98,7 +100,7 @@ export function validateCollection(collection) {
       expectedStatus: settings.expectedStatus ?? defaults.expectedStatus ?? 200,
       retries: settings.retries ?? defaults.retries ?? 0,
       retryDelayMs: settings.retryDelayMs ?? defaults.retryDelayMs ?? 0,
-      headers: { ...(defaults.headers ?? {}), ...(settings.headers ?? {}) },
+      headers: validateHeaders({ ...(defaults.headers ?? {}), ...(settings.headers ?? {}) }),
       assertions,
     };
   });

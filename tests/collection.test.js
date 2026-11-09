@@ -23,7 +23,7 @@ test('validates HTTP targets and rejects credentials and fragments', () => {
 
 test('accepts safe request headers and rejects restricted ones', () => {
   assert.deepEqual(validateHeaders({ Accept: 'application/json', 'X-Test': '1' }), {
-    Accept: 'application/json', 'X-Test': '1',
+    accept: 'application/json', 'x-test': '1',
   });
   for (const headers of [
     { Host: 'evil.example' }, { 'Content-Length': '10' },
@@ -50,7 +50,7 @@ test('normalizes defaults and per-case overrides without mutating input', () => 
   assert.equal(result.cases[0].timeoutMs, 300);
   assert.equal(result.cases[0].expectedStatus, 200);
   assert.equal(result.cases[0].retries, 1);
-  assert.deepEqual(result.cases[0].headers, { Accept: 'text/plain', 'X-Id': '1' });
+  assert.deepEqual(result.cases[0].headers, { accept: 'text/plain', 'x-id': '1' });
   assert.equal(JSON.stringify(input), snapshot);
 });
 
@@ -62,6 +62,42 @@ test('provides bounded defaults for cases without optional fields', () => {
   assert.equal(item.retries, 0);
   assert.equal(item.retryDelayMs, 0);
   assert.deepEqual(item.assertions, []);
+});
+
+test('case headers replace defaults regardless of capitalization on the wire', async () => {
+  const input = {
+    name: 'Header overrides',
+    defaults: { headers: { Authorization: 'Bearer default', Accept: 'text/plain' } },
+    cases: [one({ headers: { authorization: 'Bearer case', ACCEPT: 'application/json' } })],
+  };
+  const snapshot = JSON.stringify(input);
+  const result = await runCollection(input, {
+    fetchImpl: async (_url, options) => {
+      const headers = new Headers(options.headers);
+      assert.equal(headers.get('authorization'), 'Bearer case');
+      assert.equal(headers.get('accept'), 'application/json');
+      return fakeResponse();
+    },
+  });
+  assert.equal(result.success, true);
+  assert.equal(JSON.stringify(input), snapshot);
+});
+
+test('rejects ambiguous duplicate header names in one settings object', () => {
+  assert.throws(() => validateHeaders({ Accept: 'a', accept: 'b' }), /Duplicate/);
+});
+
+test('enforces the header count limit after merging defaults and case settings', () => {
+  const headers = offset => Object.fromEntries(
+    Array.from({ length: 11 }, (_, i) => ['X-' + (i + offset), 'v']));
+  assert.throws(() => validateCollection({
+    name: 'Combined limit', defaults: { headers: headers(0) },
+    cases: [one({ headers: headers(11) })],
+  }), /Too many/);
+  assert.equal(Object.keys(validateCollection({
+    name: 'Shared names', defaults: { headers: headers(0) },
+    cases: [one({ headers: headers(0) })],
+  }).cases[0].headers).length, 11);
 });
 
 test('rejects malformed collections and duplicate case identifiers', () => {
