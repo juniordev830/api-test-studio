@@ -12,11 +12,14 @@ Ferramenta CLI Node.js 22 para verificar status de endpoints REST, sem dependên
 node src/cli.js http://127.0.0.1:3000/health 200
 node src/cli.js http://127.0.0.1:3000/health 200 --method HEAD --timeout 2000
 node src/cli.js http://127.0.0.1:3000/health 200 --max-duration 500
+node src/cli.js http://127.0.0.1:3000/health 200 --content-type application/json
 ```
 
 O método padrão é `GET`. Use `--method HEAD` para conferir o status sem pedir o corpo da resposta. O parâmetro `--timeout` define o tempo máximo em milissegundos, de 1 a 120000. Use `--max-duration` para exigir que o endpoint responda dentro de um limite (em milissegundos, de 1 a 120000). Quando a resposta ultrapassa esse valor, o resultado inclui `durationPassed: false`, `passed: false` e o CLI termina com código 1. Sem a opção, o comportamento anterior é preservado.
 
 `--timeout` limita quanto tempo a requisição pode levar antes de ser cancelada; `--max-duration` verifica a duração da resposta concluída. É possível usar ambos.
+
+`--content-type MIME` exige o tipo de mídia HTTP informado, por exemplo `application/json`. A comparação ignora letras maiúsculas/minúsculas e parâmetros como `charset=utf-8`; não lê o corpo da resposta. Quando o cabeçalho está ausente ou não corresponde, a saída inclui `contentTypePassed: false` e o CLI termina com código 1. Sem a opção, a saída permanece compatível com a versão anterior.
 
 ## Testes
 
