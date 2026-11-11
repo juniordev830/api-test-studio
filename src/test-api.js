@@ -17,7 +17,7 @@ export async function checkEndpoint(input, expectedStatus = 200, request = fetch
   // Validate first: malformed assertions must never trigger an HTTP request.
   if (expectedContentType !== undefined &&
       (typeof expectedContentType !== 'string' || expectedContentType.length > 128 ||
-       !/^[a-z0-9!#  const startedAt = performance.now();^_.+-]+\/[a-z0-9!#  const startedAt = performance.now();^_.+-]+$/i.test(expectedContentType))) {
+       !/^[a-z0-9!#$&^_.+-]+\/[a-z0-9!#$&^_.+-]+$/i.test(expectedContentType))) {
     throw new RangeError('Expected Content-Type must be a MIME media type (e.g. application/json)');
   }
   const startedAt = performance.now();
