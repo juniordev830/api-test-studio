@@ -30,6 +30,8 @@ export async function checkEndpoint(input, expectedStatus = 200, request = fetch
     : response.headers?.get?.('content-type')?.split(';', 1)[0].trim().toLowerCase() ?? null;
   const contentTypePassed = expectedContentType === undefined ||
     actualContentType === expectedContentType.toLowerCase();
+  // Assertions use only response headers. Release streams that would otherwise stay unread.
+  void response.body?.cancel().catch(() => {});
   return {
     url: url.toString(),
     expectedStatus,
