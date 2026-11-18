@@ -19,6 +19,20 @@ test('rejects non HTTP targets and impossible status', async () => {
   await assert.rejects(checkEndpoint('http://localhost', 900), /status/);
 });
 
+test('cancels the unused response stream after checking headers', async () => {
+  let cancelled = false;
+  const stream = new ReadableStream({ cancel() { cancelled = true; } });
+  const request = async () => new Response(stream, {
+    status: 200,
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+  });
+  const result = await checkEndpoint('http://localhost', 200, request, {
+    expectedContentType: 'text/plain',
+  });
+  assert.equal(result.passed, true);
+  assert.equal(cancelled, true);
+});
+
 test('returns the redirect status without requesting the destination', async () => {
   const requests = [];
   const server = createServer((req, res) => {
