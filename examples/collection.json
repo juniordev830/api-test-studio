@@ -1,0 +1,29 @@
+{
+  "name": "Local development smoke tests",
+  "defaults": {
+    "method": "GET",
+    "timeoutMs": 2500,
+    "expectedStatus": 200,
+    "retries": 1,
+    "retryDelayMs": 100,
+    "headers": { "Accept": "application/json" }
+  },
+  "cases": [
+    {
+      "id": "health",
+      "url": "http://127.0.0.1:3000/health",
+      "assertions": [
+        { "kind": "header", "name": "content-type", "contains": "json" },
+        { "kind": "json", "path": "/status", "equals": "ok" },
+        { "kind": "duration", "maxMs": 2000 },
+        { "kind": "size", "maxBytes": 4096 }
+      ]
+    },
+    {
+      "id": "readiness",
+      "url": "http://127.0.0.1:3000/ready",
+      "expectedStatus": 204,
+      "method": "HEAD"
+    }
+  ]
+}
