@@ -206,3 +206,9 @@ test('rejects overly long JSON pointers and deeply nested path lookups', () => {
   assert.throws(() => parsePointer('/' + Array(65).fill('a').join('/')), /64 segments/);
   assert.equal(parsePointer('/' + 'x'.repeat(1023))[0].length, 1023);
 });
+
+test('size assertion rejects fractional byte thresholds', () => {
+  assert.throws(() => validateAssertion({ kind: 'size', minBytes: 0.5 }), /integer/);
+  assert.throws(() => validateAssertion({ kind: 'size', maxBytes: 2.5 }), /integer/);
+  assert.equal(validateAssertion({ kind: 'size', minBytes: 0, maxBytes: 1_048_576 }).maxBytes, 1_048_576);
+});
