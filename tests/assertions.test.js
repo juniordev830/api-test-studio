@@ -200,3 +200,9 @@ test('evaluates multiple assertions preserving input order', () => {
   assert.deepEqual(results.map(result => result.passed), [true, false, true]);
   assert.deepEqual(results.map(result => result.kind), ['status', 'status', 'json']);
 });
+
+test('rejects overly long JSON pointers and deeply nested path lookups', () => {
+  assert.throws(() => parsePointer('/' + 'x'.repeat(1024)), /1024/);
+  assert.throws(() => parsePointer('/' + Array(65).fill('a').join('/')), /64 segments/);
+  assert.equal(parsePointer('/' + 'x'.repeat(1023))[0].length, 1023);
+});
