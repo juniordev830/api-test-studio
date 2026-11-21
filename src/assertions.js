@@ -126,8 +126,14 @@ export function validateAssertion(assertion) {
       if (!own(assertion, 'maxBytes') && !own(assertion, 'minBytes')) {
         throw new TypeError('Size assertion needs a limit');
       }
-      if (own(assertion, 'maxBytes')) requireNumber(assertion.maxBytes, 'maxBytes', 0, 1048576);
-      if (own(assertion, 'minBytes')) requireNumber(assertion.minBytes, 'minBytes', 0, 1048576);
+      if (own(assertion, 'maxBytes')) {
+        requireNumber(assertion.maxBytes, 'maxBytes', 0, 1048576);
+        if (!Number.isSafeInteger(assertion.maxBytes)) throw new TypeError('maxBytes must be integer');
+      }
+      if (own(assertion, 'minBytes')) {
+        requireNumber(assertion.minBytes, 'minBytes', 0, 1048576);
+        if (!Number.isSafeInteger(assertion.minBytes)) throw new TypeError('minBytes must be integer');
+      }
       if (own(assertion, 'maxBytes') && own(assertion, 'minBytes') &&
           assertion.minBytes > assertion.maxBytes) throw new TypeError('Invalid size range');
       break;
