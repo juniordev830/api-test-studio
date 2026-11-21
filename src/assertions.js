@@ -17,7 +17,14 @@ export function parsePointer(pointer) {
   if (typeof pointer !== 'string' || !pointer.startsWith('/')) {
     throw new TypeError('JSON pointer must be empty or start with /');
   }
-  return pointer.slice(1).split('/').map(segment => {
+  if (pointer.length > 1024) {
+    throw new TypeError('JSON pointer must not exceed 1024 characters');
+  }
+  const parts = pointer.slice(1).split('/');
+  if (parts.length > 64) {
+    throw new TypeError('JSON pointer must not exceed 64 segments');
+  }
+  return parts.map(segment => {
     if (/~(?![01])/.test(segment)) throw new TypeError('Invalid JSON pointer escape');
     return segment.replace(/~1/g, '/').replace(/~0/g, '~');
   });
@@ -119,8 +126,14 @@ export function validateAssertion(assertion) {
       if (!own(assertion, 'maxBytes') && !own(assertion, 'minBytes')) {
         throw new TypeError('Size assertion needs a limit');
       }
-      if (own(assertion, 'maxBytes')) requireNumber(assertion.maxBytes, 'maxBytes', 0, 1048576);
-      if (own(assertion, 'minBytes')) requireNumber(assertion.minBytes, 'minBytes', 0, 1048576);
+      if (own(assertion, 'maxBytes')) {
+        requireNumber(assertion.maxBytes, 'maxBytes', 0, 1048576);
+        if (!Number.isSafeInteger(assertion.maxBytes)) throw new TypeError('maxBytes must be integer');
+      }
+      if (own(assertion, 'minBytes')) {
+        requireNumber(assertion.minBytes, 'minBytes', 0, 1048576);
+        if (!Number.isSafeInteger(assertion.minBytes)) throw new TypeError('minBytes must be integer');
+      }
       if (own(assertion, 'maxBytes') && own(assertion, 'minBytes') &&
           assertion.minBytes > assertion.maxBytes) throw new TypeError('Invalid size range');
       break;
