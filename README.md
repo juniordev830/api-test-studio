@@ -119,3 +119,5 @@ corpo de resposta ou valores de cabeçalhos potencialmente sensíveis.
 `src/report.js` gera formatos para pipelines.
 `src/collection-cli.js` oferece execução e exportação por terminal.
 `tests/` inclui testes de unidade e integração HTTP local.
+
+Os JSON Pointers em assertions são limitados a 1.024 caracteres e 64 segmentos para conter o custo de análise em documentos malformados. As comparações de `size` aceitam somente números inteiros de bytes, entre 0 e 1.048.576.
