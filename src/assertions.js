@@ -151,16 +151,18 @@ export function validateAssertions(assertions) {
   return assertions.map(validateAssertion);
 }
 
-function equalJson(left, right) {
+function equalJson(left, right, depth = 0) {
+  // Match the 64-segment JSON pointer safety bound for nested comparisons.
+  if (depth > 64) return false;
   if (Object.is(left, right)) return true;
   if (jsonType(left) !== jsonType(right)) return false;
   if (Array.isArray(left)) {
-    return left.length === right.length && left.every((value, i) => equalJson(value, right[i]));
+    return left.length === right.length && left.every((value, i) => equalJson(value, right[i], depth + 1));
   }
   if (isRecord(left)) {
     const keys = Object.keys(left);
     return keys.length === Object.keys(right).length &&
-      keys.every(key => own(right, key) && equalJson(left[key], right[key]));
+      keys.every(key => own(right, key) && equalJson(left[key], right[key], depth + 1));
   }
   return false;
 }
