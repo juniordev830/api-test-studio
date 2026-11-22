@@ -88,7 +88,10 @@ export function validateAssertion(assertion) {
       if (own(assertion, 'exists') && typeof assertion.exists !== 'boolean') {
         throw new TypeError('Header exists must be boolean');
       }
-      if (own(assertion, 'equals')) requireText(assertion.equals, 'Header equals');
+      if (own(assertion, 'equals') &&
+          (typeof assertion.equals !== 'string' || assertion.equals.length > 500)) {
+        throw new TypeError('Header equals must be text of at most 500 characters');
+      }
       if (own(assertion, 'contains')) requireText(assertion.contains, 'Header contains');
       if (![ 'equals', 'contains', 'exists' ].some(key => own(assertion, key))) {
         throw new TypeError('Header assertion needs a comparison');
@@ -148,16 +151,18 @@ export function validateAssertions(assertions) {
   return assertions.map(validateAssertion);
 }
 
-function equalJson(left, right) {
+function equalJson(left, right, depth = 0) {
+  // Match the 64-segment JSON pointer safety bound for nested comparisons.
+  if (depth > 64) return false;
   if (Object.is(left, right)) return true;
   if (jsonType(left) !== jsonType(right)) return false;
   if (Array.isArray(left)) {
-    return left.length === right.length && left.every((value, i) => equalJson(value, right[i]));
+    return left.length === right.length && left.every((value, i) => equalJson(value, right[i], depth + 1));
   }
   if (isRecord(left)) {
     const keys = Object.keys(left);
     return keys.length === Object.keys(right).length &&
-      keys.every(key => own(right, key) && equalJson(left[key], right[key]));
+      keys.every(key => own(right, key) && equalJson(left[key], right[key], depth + 1));
   }
   return false;
 }
@@ -202,11 +207,13 @@ export function evaluateAssertion(assertion, response) {
       break;
     }
     case 'duration':
-      passed = response.durationMs <= assertion.maxMs;
+      passed = Number.isFinite(response.durationMs) && response.durationMs >= 0 &&
+        response.durationMs <= assertion.maxMs;
       message = 'Response exceeded maximum duration';
       break;
     case 'size':
-      passed = (!own(assertion, 'maxBytes') || response.sizeBytes <= assertion.maxBytes) &&
+      passed = Number.isSafeInteger(response.sizeBytes) && response.sizeBytes >= 0 &&
+        (!own(assertion, 'maxBytes') || response.sizeBytes <= assertion.maxBytes) &&
         (!own(assertion, 'minBytes') || response.sizeBytes >= assertion.minBytes);
       message = 'Response size outside expected range';
       break;
