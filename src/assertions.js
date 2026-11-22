@@ -212,7 +212,8 @@ export function evaluateAssertion(assertion, response) {
       message = 'Response exceeded maximum duration';
       break;
     case 'size':
-      passed = (!own(assertion, 'maxBytes') || response.sizeBytes <= assertion.maxBytes) &&
+      passed = Number.isSafeInteger(response.sizeBytes) && response.sizeBytes >= 0 &&
+        (!own(assertion, 'maxBytes') || response.sizeBytes <= assertion.maxBytes) &&
         (!own(assertion, 'minBytes') || response.sizeBytes >= assertion.minBytes);
       message = 'Response size outside expected range';
       break;
