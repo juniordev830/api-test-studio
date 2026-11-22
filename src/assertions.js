@@ -207,7 +207,8 @@ export function evaluateAssertion(assertion, response) {
       break;
     }
     case 'duration':
-      passed = response.durationMs <= assertion.maxMs;
+      passed = Number.isFinite(response.durationMs) && response.durationMs >= 0 &&
+        response.durationMs <= assertion.maxMs;
       message = 'Response exceeded maximum duration';
       break;
     case 'size':
