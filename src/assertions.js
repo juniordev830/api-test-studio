@@ -88,7 +88,10 @@ export function validateAssertion(assertion) {
       if (own(assertion, 'exists') && typeof assertion.exists !== 'boolean') {
         throw new TypeError('Header exists must be boolean');
       }
-      if (own(assertion, 'equals')) requireText(assertion.equals, 'Header equals');
+      if (own(assertion, 'equals') &&
+          (typeof assertion.equals !== 'string' || assertion.equals.length > 500)) {
+        throw new TypeError('Header equals must be text of at most 500 characters');
+      }
       if (own(assertion, 'contains')) requireText(assertion.contains, 'Header contains');
       if (![ 'equals', 'contains', 'exists' ].some(key => own(assertion, key))) {
         throw new TypeError('Header assertion needs a comparison');
