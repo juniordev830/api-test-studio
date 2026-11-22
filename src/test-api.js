@@ -2,6 +2,9 @@
 export async function checkEndpoint(input, expectedStatus = 200, request = fetch, options = {}) {
   const url = new URL(input);
   if (!['http:', 'https:'].includes(url.protocol)) throw new TypeError('Only HTTP(S) allowed');
+  if (url.username || url.password) throw new TypeError('Credentials in URLs are not supported');
+  if (url.href.length > 2048) throw new RangeError('URL exceeds 2048 characters');
+  if (url.hash) throw new TypeError('URL fragments are not supported');
   if (!Number.isInteger(expectedStatus) || expectedStatus < 100 || expectedStatus > 599)
     throw new RangeError('Invalid expected status');
   const method = options.method ?? 'GET';
